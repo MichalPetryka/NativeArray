@@ -29,22 +29,30 @@ namespace NativeArray
 			Length = count;
 			_byteCount = count * Marshal.SizeOf<T>();
 			Pointer = (T*)allocator.Allocate(_byteCount).ToPointer();
-			GC.AddMemoryPressure(_byteCount);
+			if (_byteCount != 0)
+			{
+				GC.AddMemoryPressure(_byteCount);
+			}
 		}
 
 		public NativeArray(T[] array, IMemoryAllocator allocator)
 		{
+			if (array == null)
+				throw new ArgumentNullException(nameof(array));
 			_memoryAllocator = allocator;
 			Length = array.Length;
 			_byteCount = Length * Marshal.SizeOf<T>();
 			Pointer = (T*)allocator.Allocate(_byteCount).ToPointer();
+			if (_byteCount != 0)
+			{
 #if NETSTANDARD2_0
-			fixed (T* ptr = &array[0])
-				Buffer.MemoryCopy(ptr, Pointer, _byteCount, _byteCount);
+				fixed (T* ptr = &array[0])
+					Buffer.MemoryCopy(ptr, Pointer, _byteCount, _byteCount);
 #else
-			new Span<T>(array).CopyTo(new Span<T>(Pointer, Length));
+				new Span<T>(array).CopyTo(new Span<T>(Pointer, Length));
 #endif
-			GC.AddMemoryPressure(_byteCount);
+				GC.AddMemoryPressure(_byteCount);
+			}
 		}
 
 		public NativeArray(ArraySegment<T> segment, IMemoryAllocator allocator)
@@ -53,14 +61,17 @@ namespace NativeArray
 			Length = segment.Count;
 			_byteCount = Length * Marshal.SizeOf<T>();
 			Pointer = (T*)allocator.Allocate(_byteCount).ToPointer();
+			if (_byteCount != 0)
+			{
 #if NETSTANDARD2_0
 			// ReSharper disable once PossibleNullReferenceException
-			fixed (T* ptr = &segment.Array[segment.Offset])
-				Buffer.MemoryCopy(ptr, Pointer, _byteCount, _byteCount);
+				fixed (T* ptr = &segment.Array[segment.Offset])
+					Buffer.MemoryCopy(ptr, Pointer, _byteCount, _byteCount);
 #else
-			new Span<T>(segment.Array, segment.Offset, segment.Count).CopyTo(new Span<T>(Pointer, Length));
+				new Span<T>(segment.Array, segment.Offset, segment.Count).CopyTo(new Span<T>(Pointer, Length));
 #endif
-			GC.AddMemoryPressure(_byteCount);
+				GC.AddMemoryPressure(_byteCount);
+			}
 		}
 
 #if !NETSTANDARD2_0
@@ -70,8 +81,11 @@ namespace NativeArray
 			Length = span.Length;
 			_byteCount = Length * Marshal.SizeOf<T>();
 			Pointer = (T*)allocator.Allocate(_byteCount).ToPointer();
-			span.CopyTo(new Span<T>(Pointer, Length));
-			GC.AddMemoryPressure(_byteCount);
+			if (_byteCount != 0)
+			{
+				span.CopyTo(new Span<T>(Pointer, Length));
+				GC.AddMemoryPressure(_byteCount);
+			}
 		}
 #endif
 
@@ -83,18 +97,18 @@ namespace NativeArray
 
 		public static implicit operator IntPtr(NativeArray<T> nativeArray)
 		{
-			return new IntPtr(nativeArray.Pointer);
+			return nativeArray == null ? IntPtr.Zero : new IntPtr(nativeArray.Pointer);
 		}
 
 		public static implicit operator T*(NativeArray<T> nativeArray)
 		{
-			return nativeArray.Pointer;
+			return nativeArray == null ? null : nativeArray.Pointer;
 		}
 
 #if !NETSTANDARD2_0
 		public static implicit operator Span<T>(NativeArray<T> nativeArray)
 		{
-			return new Span<T>(nativeArray.Pointer, nativeArray.Length);
+			return nativeArray == null ? Span<T>.Empty : new Span<T>(nativeArray.Pointer, nativeArray.Length);
 		}
 #endif
 
@@ -188,7 +202,10 @@ namespace NativeArray
 
 		private void ReleaseUnmanagedResources()
 		{
-			GC.RemoveMemoryPressure(_byteCount);
+			if (_byteCount != 0)
+			{
+				GC.RemoveMemoryPressure(_byteCount);
+			}
 			_memoryAllocator.Free(new IntPtr(Pointer));
 		}
 

@@ -12,12 +12,6 @@ namespace NativeArray
 			return Marshal.AllocHGlobal(size);
 		}
 
-		public IntPtr Reallocate(IntPtr memory, int newSize)
-		{
-			Free(memory);
-			return Allocate(newSize);
-		}
-
 		public void Free(IntPtr memory)
 		{
 			Marshal.FreeHGlobal(memory);

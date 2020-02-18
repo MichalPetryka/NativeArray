@@ -12,12 +12,6 @@ namespace NativeArray
 			return Marshal.AllocCoTaskMem(size);
 		}
 
-		public IntPtr Reallocate(IntPtr memory, int newSize)
-		{
-			Free(memory);
-			return Allocate(newSize);
-		}
-
 		public void Free(IntPtr memory)
 		{
 			Marshal.FreeCoTaskMem(memory);
