@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   test:
-    name: ${${{ matrix.framework }} on ${{ matrix.os }}
+    name: ${{ matrix.framework }} on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -36,5 +36,6 @@ jobs:
       if: matrix.os != 'windows-latest'
       run: |
         rsync -a ${DOTNET_ROOT/3.1.101/2.1.803}/* $DOTNET_ROOT/
+        
     - name: Tests
       run: dotnet test --framework netcoreapp${{ matrix.framework }}
