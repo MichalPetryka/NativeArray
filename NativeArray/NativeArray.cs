@@ -25,7 +25,7 @@ namespace NativeArray
 
 		public NativeArray(int count, IMemoryAllocator allocator)
 		{
-			_memoryAllocator = allocator;
+			_memoryAllocator = allocator ?? throw new ArgumentNullException(nameof(allocator));
 			Length = count;
 			_byteCount = count * Marshal.SizeOf<T>();
 			Pointer = (T*)allocator.Allocate(_byteCount).ToPointer();
@@ -39,7 +39,7 @@ namespace NativeArray
 		{
 			if (array == null)
 				throw new ArgumentNullException(nameof(array));
-			_memoryAllocator = allocator;
+			_memoryAllocator = allocator ?? throw new ArgumentNullException(nameof(allocator));
 			Length = array.Length;
 			_byteCount = Length * Marshal.SizeOf<T>();
 			Pointer = (T*)allocator.Allocate(_byteCount).ToPointer();
@@ -57,14 +57,14 @@ namespace NativeArray
 
 		public NativeArray(ArraySegment<T> segment, IMemoryAllocator allocator)
 		{
-			_memoryAllocator = allocator;
+			_memoryAllocator = allocator ?? throw new ArgumentNullException(nameof(allocator));
 			Length = segment.Count;
 			_byteCount = Length * Marshal.SizeOf<T>();
 			Pointer = (T*)allocator.Allocate(_byteCount).ToPointer();
 			if (_byteCount != 0)
 			{
 #if NETSTANDARD2_0
-			// ReSharper disable once PossibleNullReferenceException
+				// ReSharper disable once PossibleNullReferenceException
 				fixed (T* ptr = &segment.Array[segment.Offset])
 					Buffer.MemoryCopy(ptr, Pointer, _byteCount, _byteCount);
 #else
@@ -77,7 +77,7 @@ namespace NativeArray
 #if !NETSTANDARD2_0
 		public NativeArray(Span<T> span, IMemoryAllocator allocator)
 		{
-			_memoryAllocator = allocator;
+			_memoryAllocator = allocator ?? throw new ArgumentNullException(nameof(allocator));
 			Length = span.Length;
 			_byteCount = Length * Marshal.SizeOf<T>();
 			Pointer = (T*)allocator.Allocate(_byteCount).ToPointer();
