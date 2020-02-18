@@ -2,6 +2,8 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
+using System.Text;
+
 // ReSharper disable MemberCanBePrivate.Global
 
 namespace NativeArray
@@ -27,7 +29,7 @@ namespace NativeArray
 		{
 			_memoryAllocator = allocator ?? throw new ArgumentNullException(nameof(allocator));
 			Length = count;
-			_byteCount = count * Marshal.SizeOf<T>();
+			_byteCount = count * sizeof(T);
 			Pointer = (T*)allocator.Allocate(_byteCount).ToPointer();
 			if (_byteCount != 0)
 			{
@@ -41,7 +43,7 @@ namespace NativeArray
 				throw new ArgumentNullException(nameof(array));
 			_memoryAllocator = allocator ?? throw new ArgumentNullException(nameof(allocator));
 			Length = array.Length;
-			_byteCount = Length * Marshal.SizeOf<T>();
+			_byteCount = Length * sizeof(T);
 			Pointer = (T*)allocator.Allocate(_byteCount).ToPointer();
 			if (_byteCount != 0)
 			{
@@ -59,7 +61,7 @@ namespace NativeArray
 		{
 			_memoryAllocator = allocator ?? throw new ArgumentNullException(nameof(allocator));
 			Length = segment.Count;
-			_byteCount = Length * Marshal.SizeOf<T>();
+			_byteCount = Length * sizeof(T);
 			Pointer = (T*)allocator.Allocate(_byteCount).ToPointer();
 			if (_byteCount != 0)
 			{
@@ -79,7 +81,7 @@ namespace NativeArray
 		{
 			_memoryAllocator = allocator ?? throw new ArgumentNullException(nameof(allocator));
 			Length = span.Length;
-			_byteCount = Length * Marshal.SizeOf<T>();
+			_byteCount = Length * sizeof(T);
 			Pointer = (T*)allocator.Allocate(_byteCount).ToPointer();
 			if (_byteCount != 0)
 			{
@@ -88,6 +90,43 @@ namespace NativeArray
 			}
 		}
 #endif
+
+		private NativeArray(int count, int allocationSize, IMemoryAllocator allocator)
+		{
+			_memoryAllocator = allocator ?? throw new ArgumentNullException(nameof(allocator));
+			Length = count;
+			_byteCount = allocationSize;
+			Pointer = (T*)allocator.Allocate(_byteCount).ToPointer();
+			byte* bytePointer = (byte*)Pointer;
+			for (int i = count; i < allocationSize; i++)
+			{
+				bytePointer[i] = 0;
+			}
+			if (_byteCount != 0)
+			{
+				GC.AddMemoryPressure(_byteCount);
+			}
+		}
+
+		public static NativeArray<byte> FromString(string text, Encoding encoding) => FromString(text, encoding, CoTaskMemAllocator.Allocator);
+		public static NativeArray<byte> FromString(string text, Encoding encoding, IMemoryAllocator allocator)
+		{
+			if (text == null)
+				throw new ArgumentNullException(nameof(text));
+			if (encoding == null)
+				throw new ArgumentNullException(nameof(encoding));
+			int byteCount = encoding.GetByteCount(text);
+			NativeArray<byte> nativeArray = new NativeArray<byte>(byteCount, byteCount + encoding.GetMaxByteCount(1), allocator);
+			int data;
+			fixed (char* ptr = text)
+				data = encoding.GetBytes(ptr, text.Length, nativeArray.Pointer, nativeArray.Length);
+			if (data != byteCount)
+			{
+				nativeArray.Dispose();
+				throw new InvalidOperationException();
+			}
+			return nativeArray;
+		}
 
 		public T this[int index]
 		{
