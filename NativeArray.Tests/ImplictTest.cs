@@ -29,7 +29,7 @@ namespace NativeArray.Tests
 				IntPtr intPtr = nativeArray;
 				Assert.Equal(new IntPtr(nativeArray.Pointer), intPtr);
 				byte* bytePtr = nativeArray;
-				Assert.True(nativeArray.Pointer == bytePtr);
+				Assert.False(nativeArray.Pointer == bytePtr);
 #if NETCOREAPP3_1
 				Span<byte> span = nativeArray;
 				Assert.True(new Span<byte>(nativeArray.Pointer, nativeArray.Length) == span);
