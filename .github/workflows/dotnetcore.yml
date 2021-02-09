@@ -13,29 +13,29 @@ jobs:
     timeout-minutes: 30
     
     steps:
-    - uses: actions/checkout@v2.2.0
+    - uses: actions/checkout@v2.3.4
         
     - name: Setup .NET Core 2.1
-      uses: actions/setup-dotnet@v1.5.0
+      uses: actions/setup-dotnet@v1.7.2
       with:
-        dotnet-version: 2.1.806
+        dotnet-version: 2.1.812
         
     - name: Setup .NET Core 3.1
-      uses: actions/setup-dotnet@v1.5.0
+      uses: actions/setup-dotnet@v1.7.2
       with:
-        dotnet-version: 3.1.300
+        dotnet-version: 3.1.405
         
     - name: Setup side by side .NET SDKs on Windows
       if: matrix.os == 'windows-latest'
       run: |
-        SET DOTNET_21_ROOT=%DOTNET_ROOT:3.1.300=2.1.806%
+        SET DOTNET_21_ROOT=%DOTNET_ROOT:3.1.405=2.1.812%
         xcopy /s /y /d %DOTNET_31_ROOT% %DOTNET_ROOT%
       shell: cmd
 
     - name: Setup side by side .NET SDKs on *nix
       if: matrix.os != 'windows-latest'
       run: |
-        rsync -a ${DOTNET_ROOT/3.1.300/2.1.806}/* $DOTNET_ROOT/
+        rsync -a ${DOTNET_ROOT/3.1.405/2.1.812}/* $DOTNET_ROOT/
         
     - name: Tests
       run: dotnet test --framework netcoreapp${{ matrix.framework }}
